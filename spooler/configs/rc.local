@@ -1,0 +1,3 @@
+#!/bin/sh -e
+# rc.local for SAP
+exit 0
