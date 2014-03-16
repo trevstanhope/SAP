@@ -7,6 +7,7 @@ import zmq
 import sys
 import os
 import cherrypy
+import datetime,time
 from cherrypy.process.plugins import Monitor
 from cherrypy import tools
 from pymongo import MongoClient
@@ -48,8 +49,22 @@ class Server:
         except Exception as error:
             print('--> ERROR: ' + str(error))
             
+        print('[Connecting to Mongo]')
+        try:
+            client = MongoClient()
+            database = client[self.MONGO_DB]
+            trial_name = datetime.datetime.now().strftime(self.TIME_FORMAT)
+            self.collection = database[trial_name]
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
+    
+    ## Store to Mongo
+    def store(self, doc):
+        try:
+            self.collection.insert(doc)
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
         
-
     ## Get Request
     def receive(self):
         print('[Receiving Request]')
@@ -73,8 +88,20 @@ class Server:
     
     ## Listen
     def listen(self):
+    
+        ## Get request
         request = self.receive()
-        self.send(request)
+        self.store(request)
+        ## decide response
+        response = {
+            'type':'response',
+            'class':'action',
+            'time':time.time()
+        }
+        
+        ## Send response
+        self.send(response)
+        self.store(response)
         
     ## Render Index
     @cherrypy.expose
