@@ -1,5 +1,8 @@
 """
 Host
+
+TODO:
+- break into classes
 """
 
 import json

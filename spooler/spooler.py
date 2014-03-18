@@ -2,11 +2,7 @@
 Spooler
 """
 
-import serial
-import zmq
 import sys
-import json
-import cv2
 
 try:
     CONFIG = sys.argv[1]
@@ -14,9 +10,7 @@ except Exception as err:
     CONFIG = 'settings.json'
 
 class Spooler:
-
     def __init__(self, config):
-    
         print('[Loading Config File]')
         with open(config) as config_file:
             settings = json.loads(config_file.read())
@@ -26,20 +20,49 @@ class Spooler:
                     getattr(self, key)
                 except AttributeError as error:
                     setattr(self, key, settings[key])
-        
+                    
+        print('[Initializing Asynch Client]')
+        try:
+            self.client = Client(self)
+        except Exception as error:
+            print('--> ERROR: ' + str(error))  
+            
+        print('[Initializing Vision]')
+        try:
+            self.vision = Vision(self)
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
+            
+        print('[Initializing Controller]')
+        try:
+            self.controller = Controller(self)
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
+           
+    ##  The run loop for the robot
+    def run(self):
+        while True:
+            try:
+                req = {'type':'test'}
+                res = self.client.send(req)
+                data = self.client.receive()
+            except KeyboardInterrupt:
+                self.client.close()
+                break
+    
+# Asynch Client
+import zmq
+import json
+class Client(object):
+    def __init__(self, object):
         print('[Initializing ZMQ]')
         try:
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REQ)
-            self.socket.connect(self.ZMQ_SERVER)
+            self.socket.connect(object.ZMQ_SERVER)
             self.poller = zmq.Poller()
             self.poller.register(self.socket, zmq.POLLIN)
-        except Exception as error:
-            print('--> ERROR: ' + str(error))
-
-        print('[Initializing Camera]')
-        try:
-            self.camera = VideoCapture(self.CV2_CAM_INDEX)
+            self.ZMQ_TIMEOUT = object.ZMQ_TIMEOUT
         except Exception as error:
             print('--> ERROR: ' + str(error))
             
@@ -52,7 +75,6 @@ class Spooler:
             return result
         except Exception as error:
             print('--> ERROR: ' + str(error))
-            return None
             
     ## Receive response from aggregator
     def receive(self):
@@ -64,25 +86,36 @@ class Spooler:
                     dump = self.socket.recv(zmq.NOBLOCK)
                     response = json.loads(dump)
                     return response
-                else:
-                    return None
-            else:
-                return None
         except Exception as error:
             print('--> ERROR: ' + str(error))
-            return None
-           
-    ##  The run loop for the robot
-    def run(self):
-        while True:
-            try:
-                req = {'type':'test'}
-                res = self.send(req)
-                data = self.receive()
-            except KeyboardInterrupt:
-                self.socket.close()
-                break
+    
+    ## Close
+    def close(self):
+        try:
+            self.socket.close()
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
+
+# Vision
+import cv2
+class Vision(object):
+    def __init__(self, object):
+        print('[Initializing Camera]')
+        try:
+            self.camera = VideoCapture(self.CV2_CAM_INDEX)
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
+
+# Controller
+import serial
+class Controller(object):
+    def __init__(self, object):
+        print('[Initializing Controller]')
+        try:
+            self.connection = serial.Serial(object.ARDUINO_DEV, object.ARDUINO_BAUD)
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
             
 if __name__ == '__main__':
-    root = Spooler(CONFIG)
-    root.run()
+    robot = Spooler(CONFIG)
+    robot.run()
