@@ -18,10 +18,9 @@ try:
 except Exception as err:
     CONFIG = 'settings.json'
 
-class Server:
+class Host:
 
     def __init__(self, config):
-    
         ### Configs
         print('[Loading Config File]')
         with open(config) as config_file:
@@ -31,8 +30,7 @@ class Server:
                 try:
                     getattr(self, key)
                 except AttributeError as error:
-                    setattr(self, key, settings[key])
-                    
+                    setattr(self, key, settings[key])         
         ### ZMQ
         print('[Initializing ZMQ]')
         try:
@@ -41,14 +39,13 @@ class Server:
             self.socket.bind(self.ZMQ_SERVER)
         except Exception as error:
             print('--> ERROR: ' + str(error))
-        
         ### CherryPy Monitors
         print('[Enabling Monitors]')
         try:
             Monitor(cherrypy.engine, self.listen, frequency=self.CHERRYPY_LISTEN_INTERVAL).subscribe()
         except Exception as error:
             print('--> ERROR: ' + str(error))
-            
+        ### Mongo 
         print('[Connecting to Mongo]')
         try:
             client = MongoClient()
@@ -86,21 +83,25 @@ class Server:
             print('--> ERROR: ' + str(error))
             return None
     
+    ## Handle Request
+    def handle_request(self, request):
+        if request['class'] == 'action':
+            response = self.handle_action(request)
+        else:
+            return None
+    
+    ## Handle action
+    def handle_action(request):
+        return 
+        
     ## Listen
     def listen(self):
-    
-        ## Get request
-        request = self.receive()
+        ### Get Handle Requests
+        request = self.receive_request()
+        response = self.handle_request(request)
+        result = self.send(response)
+        ### Log to Mongo
         self.store(request)
-        ## decide response
-        response = {
-            'type':'response',
-            'class':'action',
-            'time':time.time()
-        }
-        
-        ## Send response
-        self.send(response)
         self.store(response)
         
     ## Render Index
@@ -110,7 +111,7 @@ class Server:
         return html        
 
 if __name__ == '__main__':
-    root = Server(CONFIG)
+    root = Host(CONFIG)
     cherrypy.server.socket_host = root.CHERRYPY_ADDR
     cherrypy.server.socket_port = root.CHERRYPY_PORT
     currdir = os.path.dirname(os.path.abspath(__file__))

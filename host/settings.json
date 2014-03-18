@@ -4,5 +4,5 @@
 "CHERRYPY_PORT": 8080,
 "CHERRYPY_ADDR": "0.0.0.0",
 "MONGO_DB": "SAP",
-"TIME_FORMAT": "%Y-%m-%d-%H-%M-%S"
+"TIME_FORMAT": "Y%Y_m%m_d%d_H%H_M%M"
 }
