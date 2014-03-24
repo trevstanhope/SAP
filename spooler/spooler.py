@@ -6,6 +6,7 @@ TODO
 """
 
 import sys
+import random
 
 try:
     CONFIG = sys.argv[1]
@@ -43,9 +44,12 @@ class Spooler:
             print('--> ERROR: ' + str(error))
             
     def determine_request(self, snapshot):
+        index = random.randint(0,1) 
+        classes = ['action', 'status']
         request = {
             'type':'request',
-            'class':'action'
+            'class':classes[index],
+            'id':'spooler'
         }
         return request
            

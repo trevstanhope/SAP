@@ -12,25 +12,25 @@
       $("#ckRun").change(function() {
         var isChecked = $("#ckRun").is(":checked") ? 1:0; 
         $.ajax({
-                url: '/reqs',
+                url: '/control',
                 type: 'POST',
-                data: { strID:'ckRun', strState:isChecked }
+                data: { id:'run', state:isChecked }
         });
       });
       $("#ckSpooler").change(function() {
         var isChecked = $("#ckSpooler").is(":checked") ? 1:0; 
         $.ajax({
-                url: '/reqs',
+                url: '/control',
                 type: 'POST',
-                data: { strID:'ckSpooler', strState:isChecked }
+                data: { id:'enable_spooler', state:isChecked }
         });
       });
       $("#ckScout").change(function() {
         var isChecked = $("#ckScout").is(":checked") ? 1:0; 
         $.ajax({
-                url: '/reqs',
+                url: '/control',
                 type: 'POST',
-                data: { strID:'ckScout', strState:isChecked }
+                data: { id:'enable_scout', state:isChecked }
         });
       });
     });

@@ -20,6 +20,25 @@ try:
     CONFIG = sys.argv[1]
 except Exception as err:
     CONFIG = 'settings.json'
+    
+class StateMachine:
+    def __init__(self):
+        self.run = False
+        self.workers = {
+            'spooler': {
+                'enabled': False,
+                'orientation':0,
+                'position':0
+                },
+            'scout':{
+                'enabled': False,
+                'orientation':0,
+                'position':0
+                }
+        }
+    def best(self,request):
+        command = '1'
+        return command
 
 class Host:
 
@@ -58,6 +77,13 @@ class Host:
             database = client[self.MONGO_DB]
             trial_name = datetime.datetime.now().strftime(self.TIME_FORMAT)
             self.collection = database[trial_name]
+        except Exception as error:
+            print('--> ERROR: ' + str(error))
+            
+        ### State Machine
+        print('[Readying State Machine]')
+        try:
+            self.state = StateMachine()
         except Exception as error:
             print('--> ERROR: ' + str(error))
     
@@ -111,30 +137,30 @@ class Host:
     
     ## Determine action(DICT) --> DICT
     def determine_action(self,request):
-        """
-        This is where the Mapper comes into the picture
-        """
+        command = self.state.best(request)
         response = {
             'type':'response',
             'class':'action',
+            'id':request['id'],
             'action':{
-                'primary':222,
-                'secondary':323
+                'command':primary,
             }
         }
         return response
     
     ## Determine Status(DICT) --> DICT
     def determine_status(self, request):
-        """
-        This is where the Mapper comes into the picture
-        """
+        position = self.state.workers[request['id']]['position']
+        orientation = self.state.workers[request['id']]['orientation']
+        enabled = self.state.workers[request['id']]['enabled']
         response = {
             'type':'response',
             'class':'status',
+            'id':request['id'],
             'status':{
-                'position': [0,0],
-                'orientation': 0,
+                'position': position,
+                'orientation': orientation,
+                'enabled': enabled,
                 'time': time.time()
             }
         }
@@ -145,7 +171,7 @@ class Host:
         request = self.receive_request()
         response = self.handle_request(request)
         result = self.send_response(response)
-        self.store(request, response)
+        mongo_id = self.store(request, response)
 
     ## Render Index
     @cherrypy.expose
@@ -155,10 +181,22 @@ class Host:
         html = open('static/index.html').read()
         return html 
         
-    ## Handle Posts
+    ## Handle Control Posts
     @cherrypy.expose
-    def default(self,*args,**kwargs):
-        print 'YAY'
+    def default(self,*args,**kwargs): 
+        if kwargs['state'] == '1':
+            enabled = True
+        elif kwargs['state'] == '0':
+            enabled = False
+        if kwargs['id'] == 'run':
+            self.state.run = enabled
+        elif kwargs['id'] == 'enable_spooler':
+            self.state.workers['spooler']['enabled'] = enabled
+        elif kwargs['id'] == 'enable_scout':
+            self.state.workers['scout']['enabled'] = enabled
+        print('Scout Enabled: ' + str(self.state.run))
+        print('Scout Enabled: ' + str(self.state.workers['scout']['enabled']))
+        print('Spooler Enabled: ' + str(self.state.workers['spooler']['enabled']))
         return "It works!"
 
 if __name__ == '__main__':
