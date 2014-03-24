@@ -24,6 +24,7 @@ except Exception as err:
 class Host:
 
     def __init__(self, config):
+    
         ### Configs
         print('[Loading Config File]')
         with open(config) as config_file:
@@ -42,12 +43,14 @@ class Host:
             self.socket.bind(self.ZMQ_SERVER)
         except Exception as error:
             print('--> ERROR: ' + str(error))
+            
         ### CherryPy Monitors
         print('[Enabling Monitors]')
         try:
             Monitor(cherrypy.engine, self.listen, frequency=self.CHERRYPY_LISTEN_INTERVAL).subscribe()
         except Exception as error:
             print('--> ERROR: ' + str(error))
+            
         ### Mongo 
         print('[Connecting to Mongo]')
         try:
@@ -58,60 +61,105 @@ class Host:
         except Exception as error:
             print('--> ERROR: ' + str(error))
     
-    ## Store to Mongo
-    def store(self, doc):
+    ## Store to Mongo(DICT) --> _ID
+    def store(self, request, response):
+        print('[Storing to Mongo]')
         try:
-            self.collection.insert(doc)
+            doc = {
+                'request': request,
+                'response':response
+            }
+            _id = self.collection.insert(doc)
+            print _id
+            return _id
         except Exception as error:
             print('--> ERROR: ' + str(error))
+            return None
         
-    ## Get Request
-    def receive(self):
+    ## Get Request() --> DICT
+    def receive_request(self):
         print('[Receiving Request]')
         try:
             request = json.loads(self.socket.recv())
+            print json.dumps(request, sort_keys=True, indent=4)
             return request
         except Exception as error:
             print('--> ERROR: ' + str(error))
             return None
     
-    ## Send Response
-    def send(self, response):
+    ## Send Response(DICT) --> DICT
+    def send_response(self, response):
         print('[Sending Response]')
         try:
-            dump = json.dumps(response)
+            dump = json.dumps(response, sort_keys=True, indent=4)
+            print dump
             result = self.socket.send(dump)
             return result
         except Exception as error:
             print('--> ERROR: ' + str(error))
             return None
     
-    ## Handle Request
+    ## Handle Request(DICT) --> DICT
     def handle_request(self, request):
         if request['class'] == 'action':
-            response = self.handle_action(request)
+            response = self.determine_action(request)
+        elif request['class'] == 'status':
+            response = self.determine_status(request)
         else:
-            return None
+            response = None
+        return response
     
-    ## Handle action
-    def handle_action(request):
-        return 
+    ## Determine action(DICT) --> DICT
+    def determine_action(self,request):
+        """
+        This is where the Mapper comes into the picture
+        """
+        response = {
+            'type':'response',
+            'class':'action',
+            'action':{
+                'primary':222,
+                'secondary':323
+            }
+        }
+        return response
+    
+    ## Determine Status(DICT) --> DICT
+    def determine_status(self, request):
+        """
+        This is where the Mapper comes into the picture
+        """
+        response = {
+            'type':'response',
+            'class':'status',
+            'status':{
+                'position': [0,0],
+                'orientation': 0,
+                'time': time.time()
+            }
+        }
+        return response
         
     ## Listen
     def listen(self):
-        ### Get Handle Requests
         request = self.receive_request()
         response = self.handle_request(request)
-        result = self.send(response)
-        ### Log to Mongo
-        self.store(request)
-        self.store(response)
-        
+        result = self.send_response(response)
+        self.store(request, response)
+
     ## Render Index
     @cherrypy.expose
-    def index(self):
+    def index(self, post=None):
+        post = cherrypy.request.body.params
+        print post
         html = open('static/index.html').read()
-        return html        
+        return html 
+        
+    ## Handle Posts
+    @cherrypy.expose
+    def default(self,*args,**kwargs):
+        print 'YAY'
+        return "It works!"
 
 if __name__ == '__main__':
     root = Host(CONFIG)

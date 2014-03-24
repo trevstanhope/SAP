@@ -1,5 +1,8 @@
 """
 Spooler
+
+TODO
+- dedicated config?
 """
 
 import sys
@@ -38,14 +41,23 @@ class Spooler:
             self.controller = Controller(self)
         except Exception as error:
             print('--> ERROR: ' + str(error))
+            
+    def determine_request(self, snapshot):
+        request = {
+            'type':'request',
+            'class':'action'
+        }
+        return request
            
     ##  The run loop for the robot
     def run(self):
         while True:
             try:
-                req = {'type':'test'}
-                res = self.client.send(req)
-                data = self.client.receive()
+                snapshot = self.vision.find_trees()
+                request = self.determine_request(snapshot)
+                result = self.client.send_request(request)
+                response = self.client.receive_response()
+                #error = self.controller.execute(response)
             except KeyboardInterrupt:
                 self.client.close()
                 break
@@ -67,7 +79,7 @@ class Client(object):
             print('--> ERROR: ' + str(error))
             
     ## Send sample to aggregator
-    def send(self, request):
+    def send_request(self, request):
         print('[Sending Request]')
         try:
             dump = json.dumps(request)
@@ -77,7 +89,7 @@ class Client(object):
             print('--> ERROR: ' + str(error))
             
     ## Receive response from aggregator
-    def receive(self):
+    def receive_response(self):
         print('[Receiving Response]')
         try:
             socks = dict(self.poller.poll(self.ZMQ_TIMEOUT))
@@ -105,6 +117,8 @@ class Vision(object):
             self.camera = VideoCapture(self.CV2_CAM_INDEX)
         except Exception as error:
             print('--> ERROR: ' + str(error))
+    def find_trees(self):
+        return None
 
 # Controller
 import serial
@@ -115,6 +129,8 @@ class Controller(object):
             self.connection = serial.Serial(object.ARDUINO_DEV, object.ARDUINO_BAUD)
         except Exception as error:
             print('--> ERROR: ' + str(error))
+    def execute(self):
+        return None
             
 if __name__ == '__main__':
     robot = Spooler(CONFIG)

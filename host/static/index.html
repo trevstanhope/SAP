@@ -1,1 +1,57 @@
-hello, world.
+<!DOCTYPE html>
+<head>
+<head>
+    <title>SAP</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.css">
+    <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.4.2/jquery.mobile-1.4.2.min.js"></script>
+    <script>
+    $(document).ready(function() {
+      $("#ckRun").change(function() {
+        var isChecked = $("#ckRun").is(":checked") ? 1:0; 
+        $.ajax({
+                url: '/reqs',
+                type: 'POST',
+                data: { strID:'ckRun', strState:isChecked }
+        });
+      });
+      $("#ckSpooler").change(function() {
+        var isChecked = $("#ckSpooler").is(":checked") ? 1:0; 
+        $.ajax({
+                url: '/reqs',
+                type: 'POST',
+                data: { strID:'ckSpooler', strState:isChecked }
+        });
+      });
+      $("#ckScout").change(function() {
+        var isChecked = $("#ckScout").is(":checked") ? 1:0; 
+        $.ajax({
+                url: '/reqs',
+                type: 'POST',
+                data: { strID:'ckScout', strState:isChecked }
+        });
+      });
+    });
+    </script>
+</head>
+ 
+<body>
+    <div data-role="page">
+        <div data-role="main" class="ui-content">
+            <form>
+                <label for="switch">Run</label>
+                <input type="checkbox" data-role="flipswitch" name="switch" id="ckRun">
+            </form>
+            <form>
+                <label for="switch">Spooler</label>
+                <input type="checkbox" data-role="flipswitch" name="switch" id="ckSpooler">
+            </form>
+            <form>
+                <label for="switch">Scout</label>
+                <input type="checkbox" data-role="flipswitch" name="switch" id="ckScout">
+            </form>
+        </div>
+    </div>
+</body>
