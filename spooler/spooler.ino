@@ -11,6 +11,7 @@ void boom_left(void);
 void boom_center(void);
 
 /* --- Constants --- */
+const int BOOT_DELAY = 10000;
 const int LEFT_TREAD_MOTOR = 1;
 const int RIGHT_TREAD_MOTOR = 2;
 const int BAUD_RATE = 9600;
@@ -38,6 +39,7 @@ int COMMAND;
 
 /* --- Setup --- */
 void setup() {
+  delay(BOOT_DELAY);
   Serial.begin(BAUD_RATE);
   left_tread.setSpeed(MOTOR_SPEED);
   right_tread.setSpeed(MOTOR_SPEED);
