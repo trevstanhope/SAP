@@ -1,8 +1,15 @@
 {
-"CV2_CAM_INDEX": 0,
-"ZMQ_SERVER": "tcp://127.0.0.1:1980",
-"ZMQ_TIMEOUT": 1000,
-"ARDUINO_DEV": "/dev/ttyS0",
-"ARDUINO_BAUD": 9600,
-"DEBUG":true
+    "DEBUG":true,
+    "ZMQ_SERVER": "tcp://127.0.0.1:1980",
+    "ZMQ_TIMEOUT": 1000,
+    "ARDUINO_DEV": "/dev/ttyS0",
+    "ARDUINO_BAUD": 9600,
+    "CV2_CAM_INDEX": 0,
+    "HUE_MIN": 0,
+    "HUE_MAX": 15,
+    "VAL_MIN": 0,
+    "VAL_MAX": 255,
+    "SAT_MIN": 0,
+    "SAT_MAX": 255,
+    "THRESHOLD_PERCENTILE": 95
 }
