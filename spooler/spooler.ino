@@ -1,6 +1,15 @@
 #include <AFMotor.h>
 #include <Servo.h>
 
+/* --- Prototypes --- */
+void move_forward(void);
+void move_backward(void);
+void turn_right(void);
+void turn_left(void);
+void boom_right(void);
+void boom_left(void);
+void boom_center(void);
+
 /* --- Constants --- */
 const int LEFT_TREAD_MOTOR = 1;
 const int RIGHT_TREAD_MOTOR = 2;

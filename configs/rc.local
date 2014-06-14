@@ -1,0 +1,4 @@
+#!/bin/sh -e
+cd /home/pi/HiveNode
+python HiveNode.py configs/node.conf
+exit 0
