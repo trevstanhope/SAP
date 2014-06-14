@@ -5,7 +5,7 @@
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get install build-essential -y
-sudo apt-get install python python-imaging python-opencv python-numpy python-serial -y
+sudo apt-get install python python-imaging python-opencv python-numpy python-serial python-zmq -y
 sudo apt-get install git-core -y
 sudo apt-get install arduino arduino-mk -y
 
