@@ -118,7 +118,7 @@ class Vision(object):
     def __init__(self, object):
         print('[Initializing Camera]')
         try:
-            self.camera = VideoCapture(self.CV2_CAM_INDEX)
+            self.camera = cv2.VideoCapture(self.CV2_CAM_INDEX)
         except Exception as error:
             print('--> ERROR: ' + str(error))
     def find_trees(self):
