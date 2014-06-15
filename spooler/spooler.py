@@ -122,6 +122,7 @@ class Client(object):
 
 # Vision
 import cv2
+import cv
 import numpy
 class Vision(object):
 
@@ -130,6 +131,8 @@ class Vision(object):
         print('[Initializing Camera]')
         try:
             self.camera = cv2.VideoCapture(object.CV2_CAM_INDEX)
+            self.camera.set(cv.CV_CAP_PROP_FRAME_WIDTH, object.CAM_WIDTH)
+            self.camera.set(cv.CV_CAP_PROP_FRAME_HEIGHT, object.CAM_HEIGHT)
             print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -151,9 +154,8 @@ class Vision(object):
             column_sum = mask.sum(axis=0) # vertical summation
             threshold = numpy.percentile(column_sum, object.THRESHOLD_PERCENTILE)
             probable = numpy.nonzero(column_sum >= threshold) # returns 1 length tuble
-            num_probable = len(probable[0])
-            centroid = int(numpy.median(probable[0]))
-            return centroid
+            snapshot = [(object.CAM_FOV / float(object.CAM_WIDTH)) * (index - (object.CAM_WIDTH / 2)) for index in probable[0].tolist()] #!TODO
+            return snapshot
     
     ## Close
     def close(self):
