@@ -4,8 +4,8 @@
     "CHERRYPY_PORT": 8080,
     "CHERRYPY_ADDR": "0.0.0.0",
     "MONGO_DB": "SAP",
-    "TIME_FORMAT": "Y%Ym%md%dH%HM%M",
+    "TIME_FORMAT": "%Y-%m-%d %H:%M:%S",
     "X_SIZE" : 96,
     "Y_SIZE" : 96,
-    "NUM_TREES" : 1
+    "NUM_TREES" : 6
 }
