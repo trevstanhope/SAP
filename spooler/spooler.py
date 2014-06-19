@@ -14,6 +14,7 @@ except Exception as err:
 ## Main Class for the Spooler Robot
 import sys
 import json
+import time
 class Spooler:
     
     # Initialize
@@ -84,6 +85,7 @@ class Client(object):
         print('[Sending Request]')
         try:
             request = {
+		'time': time.time(),
                 'type':'request',
                 'id':'spooler',
                 'snapshot':snapshot,
@@ -104,6 +106,7 @@ class Client(object):
                 if socks.get(self.socket) == zmq.POLLIN:
                     dump = self.socket.recv(zmq.NOBLOCK)
                     response = json.loads(dump)
+                    print(json.dumps(response, sort_keys=True, indent=4))
                     return response
                 else:
                     print('\tERROR: No poll available')
