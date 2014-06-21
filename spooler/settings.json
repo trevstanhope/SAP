@@ -8,11 +8,11 @@
     "CAM_FOV" : 1.13446,
     "CAM_WIDTH" : 640,
     "CAM_HEIGHT" : 480,
-    "HUE_MIN": 0,
-    "HUE_MAX": 15,
-    "VAL_MIN": 0,
+    "HUE_MIN": 172,
+    "HUE_MAX": 180,
+    "VAL_MIN": 127,
     "VAL_MAX": 255,
     "SAT_MIN": 0,
     "SAT_MAX": 255,
-    "THRESHOLD_PERCENTILE": 95
+    "THRESHOLD_PERCENTILE": 85
 }
