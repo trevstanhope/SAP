@@ -162,7 +162,7 @@ class Vision(object):
             probable = numpy.nonzero(column_sum >= threshold) # returns 1 length tuble
             for i in probable[0]:
                 mask[:,i] = 255
-            cv2.imwrite('light_effect.png',mask)
+            #cv2.imwrite('light_effect.png',mask)
             snapshot = [((object.CAM_FOV / object.CAM_WIDTH) * (index - (object.CAM_WIDTH / 2.0))) for index in probable[0].tolist()] #!TODO
             return snapshot
     
