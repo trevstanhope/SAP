@@ -154,15 +154,11 @@ class Vision(object):
             threshold_min = numpy.array([hue_min, sat_min, val_min], numpy.uint8)
             threshold_max = numpy.array([hue_max, sat_max, val_max], numpy.uint8)
             mask = cv2.inRange(hsv, threshold_min, threshold_max)
-            #red_min = numpy.array([172, 127, 0], numpy.uint8)
-            #red_max = numpy.array([180, 255, 255], numpy.uint8)
-            #mask = cv2.inRange(hsv, red_min, red_max)
             column_sum = mask.sum(axis=0) # vertical summation
             threshold = numpy.percentile(column_sum, object.THRESHOLD_PERCENTILE)
             probable = numpy.nonzero(column_sum >= threshold) # returns 1 length tuble
             for i in probable[0]:
                 mask[:,i] = 255
-            #cv2.imwrite('light_effect.png',mask)
             snapshot = [((object.CAM_FOV / object.CAM_WIDTH) * (index - (object.CAM_WIDTH / 2.0))) for index in probable[0].tolist()] #!TODO
             return snapshot
     
