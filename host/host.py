@@ -296,10 +296,17 @@ class StateMachine(object):
             self.spooler_position = (object.SPOOLER_DEFAULT_X, object.SPOOLER_DEFAULT_Y, object.SPOOLER_DEFAULT_T)
             self.scout_left_position = (object.SCOUT_LEFT_DEFAULT_X, object.SCOUT_LEFT_DEFAULT_Y, object.SCOUT_LEFT_DEFAULT_T)
             self.scout_right_position = (object.SCOUT_RIGHT_DEFAULT_X, object.SCOUT_RIGHT_DEFAULT_Y, object.SCOUT_RIGHT_DEFAULT_T)
-            self.SPOOLER_LARGE_MOVEMENT = object.SPOOLER_LARGE_MOVEMENT
+            self.SPOOLER_COARSE_MOVEMENT = object.SPOOLER_COARSE_MOVEMENT
             self.SPOOLER_FINE_MOVEMENT = object.SPOOLER_FINE_MOVEMENT
-            self.SPOOLER_LARGE_TURN = object.SPOOLER_LARGE_TURN
+            self.SPOOLER_COARSE_TURN = object.SPOOLER_COARSE_TURN
             self.SPOOLER_FINE_TURN = object.SPOOLER_FINE_TURN
+            ### Command Strings
+            self.SPOOLER_FORWARD_COARSE_COMMAND = object.SPOOLER_FORWARD_COARSE_COMMAND
+            self.SPOOLER_FORWARD_FINE_COMMAND = object.SPOOLER_FORWARD_FINE_COMMAND
+            self.SPOOLER_RIGHT_COARSE_COMMAND = object.SPOOLER_RIGHT_COARSE_COMMAND
+            self.SPOOLER_RIGHT_FINE_COMMAND = object.SPOOLER_RIGHT_FINE_COMMAND
+            self.SPOOLER_LEFT_COARSE_COMMAND = object.SPOOLER_LEFT_COARSE_COMMAND
+            self.SPOOLER_LEFT_FINE_COMMAND = object.SPOOLER_LEFT_FINE_COMMAND
             print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -353,38 +360,35 @@ class StateMachine(object):
                 if numpy.allclose(t, target_orientation, atol=self.SPOOLER_FINE_TURN):
                     print('\tCosine: %s' % str(numpy.cos(t)))
                     print('\tSin: %s' % (numpy.sin(t)))
-                    if numpy.less(distance_to_target, self.SPOOLER_LARGE_MOVEMENT):
-                        command = 'forward_fine'
+                    if numpy.less(distance_to_target, self.SPOOLER_COARSE_MOVEMENT):
+                        command = self.SPOOLER_FORWARD_FINE_COMMAND
                         new_x = int(x + self.SPOOLER_FINE_MOVEMENT * numpy.cos(t))
                         new_y = int(y + self.SPOOLER_FINE_MOVEMENT * numpy.sin(t))
                     else:
-                        command = 'forward_large'
-                        new_x = int(x + self.SPOOLER_LARGE_MOVEMENT * numpy.cos(t))
-                        new_y = int(y + self.SPOOLER_LARGE_MOVEMENT * numpy.sin(t))
+                        command = self.SPOOLER_FORWARD_COARSE_COMMAND
+                        new_x = int(x + self.SPOOLER_COARSE_MOVEMENT * numpy.cos(t))
+                        new_y = int(y + self.SPOOLER_COARSE_MOVEMENT * numpy.sin(t))
                     self.spooler_position = (new_x, new_y, t)
-                ### Turn Right #!TODO Fine vs Large, Turning right from wide to 0 also broken
+                ### Turn Right #!TODO Fine vs COARSE, Turning right from wide to 0 also broken
                 elif numpy.less(t, target_orientation) and ((target_orientation-t) < numpy.pi):
-                    command = 'right'
+                    command = self.SPOOLER_RIGHT_FINE_COMMAND
                     new_t = t + self.SPOOLER_FINE_TURN
                     if new_t > 2 * numpy.pi:
                         new_t_round = numpy.around(new_t - 2 * numpy.pi, self.ORIENTATION_PRECISION)
                     else:
                         new_t_round = numpy.around(new_t, self.ORIENTATION_PRECISION)
                     self.spooler_position = (x, y, new_t_round)
-                ### Turn Right #!TODO fine vs large
+                ### Turn Right #!TODO fine vs COARSE
                 elif numpy.greater(t, target_orientation) or ((target_orientation - t) < 2 * numpy.pi):
-                    command = 'left'
+                    command = self.SPOOLER_LEFT_FINE_COMMAND
                     new_t = t - self.SPOOLER_FINE_TURN
                     if new_t < 0:
                         new_t = numpy.around(2 * numpy.pi + new_t, self.ORIENTATION_PRECISION)
                     else:
                         new_t = numpy.around(new_t, self.ORIENTATION_PRECISION)
                     self.spooler_position = (x, y, new_t)
-                ### Move Backward #!TODO
-                elif False:
-                    command = 'backward'
                 else:
-                    command = 'wait'
+                    command = self.SPOOLER_WAIT_COMMAND
                 time.sleep(1)
             else:
                 command = 'wait'
