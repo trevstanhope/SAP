@@ -28,9 +28,9 @@ const char LEFT_COARSE = 'L';
 const char LEFT_FINE = 'l';
 const char RIGHT_COARSE = 'R';
 const char RIGHT_FINE = 'r';
-const char BOOM_RIGHT = '5';
-const char BOOM_LEFT = '6';
-const char BOOM_CENTER = '7';
+const char BOOM_RIGHT = 'S';
+const char BOOM_LEFT = 'P';
+const char BOOM_CENTER = 'C';
 const int COARSE_TURN_DELAY = 2000;
 const int FINE_TURN_DELAY = 1000;
 const int COARSE_MOVE_DELAY = 1000;
@@ -138,33 +138,37 @@ void backward_fine() {
 
 void right_coarse() {
   left_tread.run(FORWARD);
-  right_tread.run(BACKWARD);
   delay(COARSE_TURN_DELAY);
   left_tread.run(RELEASE); // initialize motor off
+  right_tread.run(BACKWARD);
+  delay(COARSE_TURN_DELAY);
   right_tread.run(RELEASE); // initialize motor off
 }
 
 void right_fine() {
   left_tread.run(FORWARD);
-  right_tread.run(BACKWARD);
   delay(FINE_TURN_DELAY);
   left_tread.run(RELEASE); // initialize motor off
+  right_tread.run(BACKWARD);
+  delay(FINE_TURN_DELAY);
   right_tread.run(RELEASE); // initialize motor off
 }
 
 void left_coarse() {
   left_tread.run(BACKWARD);
-  right_tread.run(FORWARD);
   delay(COARSE_TURN_DELAY);
   left_tread.run(RELEASE); // initialize motor off
+  right_tread.run(FORWARD);
+  delay(COARSE_TURN_DELAY);
   right_tread.run(RELEASE); // initialize motor off
 }
 
 void left_fine() {
   left_tread.run(BACKWARD);
-  right_tread.run(FORWARD);
   delay(FINE_TURN_DELAY);
   left_tread.run(RELEASE); // initialize motor off
+  right_tread.run(FORWARD);
+  delay(FINE_TURN_DELAY);
   right_tread.run(RELEASE); // initialize motor off
 }
 

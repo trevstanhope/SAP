@@ -92,6 +92,7 @@ class Client(object):
             print(json.dumps(request, sort_keys=True, indent=4))
             dump = json.dumps(request)
             result = self.socket.send(dump)
+            print('\tOKAY')
             return result
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -106,6 +107,7 @@ class Client(object):
                     dump = self.socket.recv(zmq.NOBLOCK)
                     response = json.loads(dump)
                     print(json.dumps(response, sort_keys=True, indent=4))
+                    print('\tOKAY')
                     return response
                 else:
                     print('\tERROR: No poll available')
@@ -119,6 +121,7 @@ class Client(object):
         print('[Closing ZMQ Connection]')
         try:
             self.socket.close()
+            print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
 
@@ -141,8 +144,11 @@ class Vision(object):
             
     #!TODO Find Trees
     def find_trees(self, object):
-        (s, bgr) = self.camera.read()
+        print('[Capturing Image]')
+        for i in range(30):
+            (s, bgr) = self.camera.read()
         if s:
+            print('\tOKAY')
             hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
             hue_min = object.HUE_MIN
             hue_max = object.HUE_MAX
@@ -159,13 +165,19 @@ class Vision(object):
             for i in probable[0]:
                 mask[:,i] = 255
             snapshot = [((object.CAM_FOV / object.CAM_WIDTH) * (index - (object.CAM_WIDTH / 2.0))) for index in probable[0].tolist()] #!TODO
+            cv2.imwrite(object.ID + '_bgr.jpg', bgr)
+            cv2.imwrite(object.ID + '_hsv.jpg', hsv)
+            cv2.imwrite(object.ID + '_mask.jpg', mask)
             return snapshot
+        else:
+            print('\tERROR')
     
     ## Close
     def close(self):
         print('[Releasing Camera Connection]')
         try:
             self.camera.release()
+            print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
 
@@ -189,6 +201,7 @@ class Controller(object):
         try:
             command = response['command']
             self.arduino.write(command)
+            print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
     
@@ -197,6 +210,7 @@ class Controller(object):
         print('[Closing Serial Connection]')
         try:
             self.arduino.close()
+            print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
             

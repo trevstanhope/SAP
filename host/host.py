@@ -11,6 +11,7 @@ import sys
 import os
 import time
 from datetime import datetime
+from matplotlib import pyplot as mpl
 
 # Constants
 try:
@@ -60,7 +61,7 @@ class Host:
     
     ## Run
     def run(self, object):
-        print('[Running] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        print('[Starting Run] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         self.running = True
         while self.running: 
             request = self.server.receive_request()
@@ -71,18 +72,25 @@ class Host:
             robots = self.state_machine.predict_robots()
             path = self.state_machine.path
             true_path = self.state_machine.true_path
-            self.display.show_board(trees, robots, path, true_path)
+            heat_map = self.state_machine.map
+            self.display.show_board(trees, robots, path, true_path, heat_map)
             self.database.store(request, response)
 
     ## Stop 
     def stop(self, object):
-        print('[Stopping] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        print('[Stopping Run] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         self.running = False
         
     ## Reset 
     def reset(self, object):
-        print('[Stopping] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        print('[Resetting Run] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         self.state_machine = StateMachine(self)
+    
+    ## Reset 
+    def shutdown(self, object):
+        print('[Shutting Down] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        self.state_machine.close()
+        self.server.close()
         
 # ZMQ Server Object
 import zmq
@@ -171,6 +179,10 @@ class Display(object):
     def __init__(self, object):
         print('[Initializing Display] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         try:
+            ###
+            self.X_SIZE = object.X_SIZE
+            self.Y_SIZE = object.Y_SIZE
+            ### Window
             self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
             self.window.set_size_request(480, 120)
             self.window.connect("delete_event", self.close)
@@ -194,6 +206,11 @@ class Display(object):
             self.button_reset.connect("clicked", object.reset)
             self.hbox.pack_start(self.button_reset, True, True, 0)
             self.button_reset.show()
+            ### Shutdown Button
+            self.button_shutdown = gtk.Button("Shutdown")
+            self.button_shutdown.connect("clicked", object.shutdown)
+            self.hbox.pack_start(self.button_shutdown, True, True, 0)
+            self.button_shutdown.show()
             print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -212,7 +229,7 @@ class Display(object):
             print('\tERROR: %s' % str(error))
     
     ## Show Board State
-    def show_board(self, tree_locations, robot_locations, path, true_path):
+    def show_board(self, tree_locations, robot_locations, path, true_path, heat_map):
         print('[Displaying Board] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         try:
             board = cv2.imread('board.jpg')
@@ -243,7 +260,16 @@ class Display(object):
                 (x2, y2) = true_path[i+1]
                 pt2 = (x2 * w / 96, y2 * h / 96)
                 cv2.line(board, pt1, pt2, (0,128,255), thickness=4, lineType=8, shift=0)
-            cv2.imshow('BOARD', board)
+            ### Draw Heat Map
+            map_min = heat_map.min()
+            map_max = heat_map.max()
+            for i in range(self.X_SIZE):
+                for j in range(self.Y_SIZE):
+                    x = int(i * w / float(self.X_SIZE))
+                    y = int(j * h / float(self.Y_SIZE))
+                    if heat_map[j,i] > heat_map.mean():
+                        board[x, y, :] = 0
+            cv2.imshow('SAP', board)
             if cv2.waitKey(5) == 27:
                 pass
         except Exception as error:
@@ -251,6 +277,7 @@ class Display(object):
             
 # StateMachine
 import numpy
+import cv2
 import itertools as it
 import math
 class StateMachine(object):
@@ -300,13 +327,15 @@ class StateMachine(object):
             self.SPOOLER_FINE_MOVEMENT = object.SPOOLER_FINE_MOVEMENT
             self.SPOOLER_COARSE_TURN = object.SPOOLER_COARSE_TURN
             self.SPOOLER_FINE_TURN = object.SPOOLER_FINE_TURN
-            ### Command Strings
+            ### Spooler Command Strings
             self.SPOOLER_FORWARD_COARSE_COMMAND = object.SPOOLER_FORWARD_COARSE_COMMAND
             self.SPOOLER_FORWARD_FINE_COMMAND = object.SPOOLER_FORWARD_FINE_COMMAND
             self.SPOOLER_RIGHT_COARSE_COMMAND = object.SPOOLER_RIGHT_COARSE_COMMAND
             self.SPOOLER_RIGHT_FINE_COMMAND = object.SPOOLER_RIGHT_FINE_COMMAND
             self.SPOOLER_LEFT_COARSE_COMMAND = object.SPOOLER_LEFT_COARSE_COMMAND
             self.SPOOLER_LEFT_FINE_COMMAND = object.SPOOLER_LEFT_FINE_COMMAND
+            self.SPOOLER_WAIT_COMMAND = object.SPOOLER_WAIT_COMMAND
+            self.SCOUT_WAIT_COMMAND = object.SPOOLER_WAIT_COMMAND
             print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -333,13 +362,13 @@ class StateMachine(object):
             if len(self.detected_trees) < self.NUM_TREES:
                 print('\tWARNING: Not enough trees detected')
                 self.update_map(snapshot, position) 
-                command = 'wait'
+                command = self.SPOOLER_WAIT_COMMAND
             elif len(self.path) < self.NUM_TREES:
                 print('\tWARNING: Ready to calculate path')
                 self.path = self.find_path(self.detected_trees)
                 self.true_path = self.find_true_path(self.path)
                 self.target_points = self.true_path[1:]
-                command = 'wait'
+                command = self.SPOOLER_WAIT_COMMAND
             elif len(self.target_points) > 0:
                 print('\tWARNING: Running Path')
                 #!TODO decide movement actions for spooler
@@ -391,9 +420,10 @@ class StateMachine(object):
                     command = self.SPOOLER_WAIT_COMMAND
                 time.sleep(1)
             else:
-                command = 'wait'
+                command = self.SPOOLER_WAIT_COMMAND
         except Exception as error:
-            print('\tERROR: %s' % str(error))
+            print('\tERROR in command_spooler(): %s' % str(error))
+            command = self.SPOOLER_WAIT_COMMAND
         print('\tCommand: %s' % str(command))
         response = {
             'type' : 'response', 
@@ -405,53 +435,89 @@ class StateMachine(object):
     def command_scout_left(self, request):
         print('[Handling Scout Request] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         try:
-            print('\tOKAY')
-            return request #!TODO decide movement actions for scout left 
+            snapshot = request['snapshot']
+            position = self.scout_left_position
+            self.detected_trees = self.predict_trees()
+            if len(self.detected_trees) < self.NUM_TREES:
+                print('\tWARNING: Not enough trees detected')
+                self.update_map(snapshot, position)
+                command = self.SCOUT_WAIT_COMMAND
+            else:
+                command = self.SCOUT_WAIT_COMMAND
+            response = {
+                'type' : 'response', 
+                'command' : command
+            }       
+            return response #!TODO decide movement actions for scout left 
         except Exception as error:
-            print('\tERROR: %s' % str(error))
+            print('\tERROR in command_scout_left(): %s' % str(error))
         
     ##!TODO Handle Scout (Right)
     def command_scout_right(self, request):
         print('[Handling Scout Request] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         try:
-            print('\tOKAY') 
-            return request #!TODO decide movement actions for scout right 
+            snapshot = request['snapshot']
+            position = self.scout_right_position
+            self.detected_trees = self.predict_trees()
+            if len(self.detected_trees) < self.NUM_TREES:
+                print('\tWARNING: Not enough trees detected')
+                self.update_map(snapshot, position)
+                command = self.SCOUT_WAIT_COMMAND
+            else:
+                command = self.SCOUT_WAIT_COMMAND
+            response = {
+                'type' : 'response', 
+                'command' : command
+            } 
+            return response #!TODO decide movement actions for scout right 
         except Exception as error:
-            print('\tERROR: %s' % str(error))
+            print('\tERROR in command_scout_right(): %s' % str(error))
             
     ## Update Map   
     def update_map(self, snapshot, position):
         print('[Updating Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         (x, y, t) = position
+        x_all = []
+        y_all = []
         for offset in snapshot:
-            for orientation in [-self.CAMERA_ERROR, 0, self.CAMERA_ERROR]: # #!TODO more then 3
-                x1 = x + numpy.cos(t + offset + self.CAMERA_ERROR) * self.DIST_MIN
-                y1 = y + numpy.sin(t + offset + self.CAMERA_ERROR) * self.DIST_MIN
-                for dist in range(self.DIST_MIN, self.DIST_MAX):
-                    x2 = x1 + numpy.cos(t + offset + self.CAMERA_ERROR) * dist
-                    y2 = y1 + numpy.sin(t + offset + self.CAMERA_ERROR) * dist
-                    if (x2 >= self.X_SIZE - 2) or (y2 >= self.Y_SIZE - 2):
-                        break
-                    elif (x2 <= 0) or (y2 <= 0):
-                        break
-                    else:
-                        continue
-            x_vals = numpy.linspace(x1, x2, dist).astype(int)
-            y_vals = numpy.linspace(y1, y2, dist).astype(int)
-            self.map[x_vals, y_vals] += 1 ## add to field
+            for error in numpy.linspace(-0.05, 0.05):
+                x1 = x + numpy.cos(t + offset + error) * self.DIST_MIN
+                y1 = y + numpy.sin(t + offset + error) * self.DIST_MIN
+                if (x1 >= self.X_SIZE - 2) or (y1 >= self.Y_SIZE - 2):
+                    pass
+                elif (x1 <= 2) or (y1 <= 2):
+                    pass
+                else:
+                    for dist in range(self.DIST_MIN, self.DIST_MAX):
+                        x2 = x1 + numpy.cos(t + offset + error) * dist
+                        y2 = y1 + numpy.sin(t + offset + error) * dist
+                        if (x2 >= self.X_SIZE - 2) or (y2 >= self.Y_SIZE - 2):
+                            break
+                        elif (x2 <= 2) or (y2 <= 2):
+                            break
+                        else:
+                             continue
+                    x_vals = numpy.linspace(x1, x2, dist).astype(int)
+                    y_vals = numpy.linspace(y1, y2, dist).astype(int)
+                    self.map[x_vals, y_vals] += 0.05 - abs(error)
+                    for i in x_vals:
+                        x_all.append(i)
+                    for i in y_vals:
+                        y_all.append(i)
+        #self.map[x_all, y_all] += 1
     
     ## Predict Tree Locations        
     def predict_trees(self):
         print('[Predicting Tree Locations] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         mask = self.map[numpy.nonzero(self.map)]
-        (x,y) = numpy.nonzero((self.map > numpy.mean(mask)))
+        (x,y) = numpy.nonzero((self.map > numpy.percentile(self.map, 75)))
         tree_locations = []
         for i in range(len(x)):
             for (a,b) in self.tree_positions:
                 if x[i] == a and y[i] == b:
-                    tree_locations.append( (x[i], y[i]) )
+                    tree_locations.append( (a, b) )
         print('\tTrees: %s' % str(tree_locations))
-        return tree_locations
+        return list(set(tree_locations))
     
     ## Predict Robot Locations
     def predict_robots(self):
@@ -466,13 +532,16 @@ class StateMachine(object):
     ## Calculate Minimum Hamiltonian Path
     def find_path(self, trees):
         print('[Find Shortest Path] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
-        points = trees.append((48,1)) # add start
-        paths = [ p for p in it.permutations(trees) ]
-        path_distances = [ sum(map(lambda x: self.dist(x[0],x[1]),zip(p[:-1],p[1:]))) for p in paths ]
-        min_index = numpy.argmin(path_distances)
-        shortest_path = paths[min_index]
-        print('\tPath: %s' % str(shortest_path[::-1]))
-        return shortest_path[::-1]
+        try:
+            points = trees.append((48,1)) # add start
+            paths = [ p for p in it.permutations(trees) ]
+            path_distances = [ sum(map(lambda x: self.dist(x[0],x[1]),zip(p[:-1],p[1:]))) for p in paths ]
+            min_index = numpy.argmin(path_distances)
+            shortest_path = paths[min_index]
+            print('\tPath: %s' % str(shortest_path[::-1]))
+            return shortest_path[::-1]
+        except Exception as error:
+            print('\tERROR: %s' % str(error))
     
     ## Calculate the True Path for Spooler to Travel
     def find_true_path(self, path):

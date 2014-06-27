@@ -6,7 +6,7 @@
     "ARDUINO_DEV" : "/dev/ttyS0",
     "ARDUINO_BAUD" : 9600,
     "CV2_CAM_INDEX" : 0,
-    "CAM_FOV" : 1.184,
+    "CAM_FOV" : 0.90,
     "CAM_WIDTH" : 640,
     "CAM_HEIGHT" : 480,
     "HUE_MIN" : 172,
@@ -15,5 +15,5 @@
     "VAL_MAX" : 255,
     "SAT_MIN" : 0,
     "SAT_MAX" : 255,
-    "THRESHOLD_PERCENTILE": 85
+    "THRESHOLD_PERCENTILE": 95
 }
