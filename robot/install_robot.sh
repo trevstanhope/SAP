@@ -4,9 +4,16 @@
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get install build-essential -y
-sudo apt-get install python python-imaging python-opencv python-numpy python-serial python-zmq -y
+sudo apt-get install python -y
+sudo apt-get install python-imaging -y
+sudo apt-get install python-opencv -y
+sudo apt-get install python-numpy -y
+sudo apt-get install python-scipy -y
+sudo apt-get install python-serial -y
+sudo apt-get install python-zmq -y
 sudo apt-get install git-core -y
-sudo apt-get install arduino arduino-mk -y
+sudo apt-get install arduino -y
+sudo apt-get install arduino-mk -y
 
 # Configure Arduino
 sudo cp configs/avrdude /usr/bin/avrdude

@@ -51,10 +51,12 @@ class Robot:
     def run(self):
         while True:
             try:
-                snapshot = self.vision.find_trees(self)
-                result = self.client.send_request(self, snapshot)
-                response = self.client.receive_response(self)
-                error = self.controller.execute(self, response)
+                hsv = self.vision.capture_image()
+                trees_snapshot = self.vision.find_trees(hsv)
+                spooler_snapshot = self.vision.find_spooler(hsv)
+                result = self.client.send_request(trees_snapshot, spooler_snapshot)
+                response = self.client.receive_response()
+                error = self.controller.execute(response)
             except KeyboardInterrupt:
                 self.client.close()
                 self.vision.close()
@@ -80,16 +82,16 @@ class Client(object):
             print('\tERROR: %s' % str(error))
             
     ## Send sample to aggregator
-    def send_request(self, object, snapshot):
+    def send_request(self, trees_snapshot, spooler_snapshot):
         print('[Sending Request]')
         try:
             request = {
 		        'time' : time.time(),
                 'type' : 'request',
                 'id' : self.ID,
-                'snapshot' : snapshot,
+                'trees_snapshot' : trees_snapshot,
+                'spooler_snapshot' : spooler_snapshot,
             }
-            print(json.dumps(request, sort_keys=True, indent=4))
             dump = json.dumps(request)
             result = self.socket.send(dump)
             print('\tOKAY')
@@ -98,10 +100,10 @@ class Client(object):
             print('\tERROR: %s' % str(error))
             
     ## Receive response from aggregator
-    def receive_response(self, object):
+    def receive_response(self):
         print('[Receiving Response]')
         try:
-            socks = dict(self.poller.poll(object.ZMQ_TIMEOUT))
+            socks = dict(self.poller.poll(self.ZMQ_TIMEOUT))
             if socks:
                 if socks.get(self.socket) == zmq.POLLIN:
                     dump = self.socket.recv(zmq.NOBLOCK)
@@ -138,39 +140,59 @@ class Vision(object):
             self.camera = cv2.VideoCapture(object.CV2_CAM_INDEX)
             self.camera.set(cv.CV_CAP_PROP_FRAME_WIDTH, object.CAM_WIDTH)
             self.camera.set(cv.CV_CAP_PROP_FRAME_HEIGHT, object.CAM_HEIGHT)
+            self.CAM_WIDTH = object.CAM_WIDTH
+            self.CAM_FOV = object.CAM_FOV
+            self.THRESHOLD_PERCENTILE = object.THRESHOLD_PERCENTILE
+            self.TREE_THRESHOLD_MIN = numpy.array([object.TREE_HUE_MIN, object.TREE_SAT_MIN, object.TREE_VAL_MIN], numpy.uint8)
+            self.TREE_THRESHOLD_MAX = numpy.array([object.TREE_HUE_MAX, object.TREE_SAT_MAX, object.TREE_VAL_MAX], numpy.uint8)
+            self.SPOOLER_THRESHOLD_MIN = numpy.array([object.SPOOLER_HUE_MIN, object.SPOOLER_SAT_MIN, object.SPOOLER_VAL_MIN], numpy.uint8)
+            self.SPOOLER_THRESHOLD_MAX = numpy.array([object.SPOOLER_HUE_MAX, object.SPOOLER_SAT_MAX, object.SPOOLER_VAL_MAX], numpy.uint8)
             print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
-            
-    #!TODO Find Trees
-    def find_trees(self, object):
-        print('[Capturing Image]')
+    
+    def capture_image(self):
         for i in range(30):
             (s, bgr) = self.camera.read()
         if s:
-            print('\tOKAY')
             hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-            hue_min = object.HUE_MIN
-            hue_max = object.HUE_MAX
-            sat_min = object.SAT_MIN
-            sat_max = object.SAT_MAX
-            val_min = object.VAL_MIN
-            val_max = object.VAL_MAX
-            threshold_min = numpy.array([hue_min, sat_min, val_min], numpy.uint8)
-            threshold_max = numpy.array([hue_max, sat_max, val_max], numpy.uint8)
-            mask = cv2.inRange(hsv, threshold_min, threshold_max)
+            cv2.imwrite('bgr.jpg', bgr)
+            cv2.imwrite('hsv.jpg', hsv)
+        return hsv
+        
+    #!TODO Find Trees
+    def find_trees(self, hsv):
+        print('[Finding Trees]')
+        try:
+            mask = cv2.inRange(hsv, self.TREE_THRESHOLD_MIN, self.TREE_THRESHOLD_MAX)
             column_sum = mask.sum(axis=0) # vertical summation
-            threshold = numpy.percentile(column_sum, object.THRESHOLD_PERCENTILE)
+            threshold = numpy.percentile(column_sum, self.THRESHOLD_PERCENTILE)
             probable = numpy.nonzero(column_sum >= threshold) # returns 1 length tuble
             for i in probable[0]:
                 mask[:,i] = 255
-            snapshot = [((object.CAM_FOV / object.CAM_WIDTH) * (index - (object.CAM_WIDTH / 2.0))) for index in probable[0].tolist()] #!TODO
-            cv2.imwrite(object.ID + '_bgr.jpg', bgr)
-            cv2.imwrite(object.ID + '_hsv.jpg', hsv)
-            cv2.imwrite(object.ID + '_mask.jpg', mask)
+            snapshot = [((self.CAM_FOV / self.CAM_WIDTH) * (index - (self.CAM_WIDTH / 2.0))) for index in probable[0].tolist()]
+            cv2.imwrite('mask_tree.jpg', mask)
+            print('\tOKAY')
             return snapshot
-        else:
-            print('\tERROR')
+        except Exception as error:
+            print('\tERROR: %s' % str(error))
+            
+    #!TODO Find Spooler
+    def find_spooler(self, hsv):
+        print('[Finding Spooler]')
+        try:
+            mask = cv2.inRange(hsv, self.SPOOLER_THRESHOLD_MIN, self.SPOOLER_THRESHOLD_MAX)
+            column_sum = mask.sum(axis=0) # vertical summation
+            threshold = numpy.percentile(column_sum, self.THRESHOLD_PERCENTILE)
+            probable = numpy.nonzero(column_sum >= threshold) # returns 1 length tuble
+            for i in probable[0]:
+                mask[:,i] = 255
+            snapshot = [((self.CAM_FOV / self.CAM_WIDTH) * (index - (self.CAM_WIDTH / 2.0))) for index in probable[0].tolist()]
+            cv2.imwrite('mask_spooler.jpg', mask)
+            print('\tOKAY')
+            return snapshot
+        except Exception as error:
+            print('\tERROR: %s' % str(error))
     
     ## Close
     def close(self):
@@ -196,7 +218,7 @@ class Controller(object):
             print('\tERROR: %s' % str(error))
     
     #!TODO Execute Command on Arduino
-    def execute(self, object, response):
+    def execute(self, response):
         print('[Sending Command to Arduino]')
         try:
             command = response['command']

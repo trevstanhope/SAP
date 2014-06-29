@@ -2,17 +2,14 @@
 #include <Servo.h>
 
 /* --- Prototypes --- */
-void forward_coarse(void);
-void forward_fine(void);
-void backward_coarse(void);
-void backward_fine(void);
-void right_coarse(void);
-void right_fine(void);
-void left_coarse(void);
-void left_fine(void);
+void forward(void);
+void backward(void);
+void right(void);
+void left(void);
 void boom_right(void);
 void boom_left(void);
 void boom_center(void);
+void drop(void);
 
 /* --- Constants --- */
 const int BOOT_DELAY = 10000;
@@ -20,26 +17,22 @@ const int LEFT_TREAD_MOTOR = 1;
 const int RIGHT_TREAD_MOTOR = 2;
 const int BAUD_RATE = 9600;
 const int MOTOR_SPEED = 100;
-const char FORWARD_COARSE = 'F';
-const char FORWARD_FINE = 'f';
-const char BACKWARD_COARSE = 'B';
-const char BACKWARD_FINE = 'b';
-const char LEFT_COARSE = 'L';
-const char LEFT_FINE = 'l';
-const char RIGHT_COARSE = 'R';
-const char RIGHT_FINE = 'r';
-const char BOOM_RIGHT = 'S';
-const char BOOM_LEFT = 'P';
-const char BOOM_CENTER = 'C';
-const int COARSE_TURN_DELAY = 2000;
-const int FINE_TURN_DELAY = 1000;
-const int COARSE_MOVE_DELAY = 1000;
-const int FINE_MOVE_DELAY = 500;
+const char FORWARD_COMMAND = 'F';
+const char BACKWARD_COMMAND = 'B';
+const char LEFT_COMMAND = 'L';
+const char RIGHT_COMMAND = 'R';
+const char BOOM_RIGHT_COMMAND = 'S';
+const char BOOM_LEFT_COMMAND = 'P';
+const char BOOM_CENTER_COMMAND = 'C';
+const char DROP_COMMAND = 'D';
+const int TURN_DELAY = 1000;
+const int MOVE_DELAY = 500;
 const int BOOM_PIN = 10;
 const int DEGREES_RIGHT = 141;
 const int DEGREES_LEFT = 25;
 const int DEGREES_CENTER = 83;
 const int BOOM_DELAY = 100;
+const int DROP_DELAY = 100;
 
 /* --- Objects --- */
 AF_DCMotor left_tread(LEFT_TREAD_MOTOR);
@@ -65,110 +58,65 @@ void loop() {
   
   // Execute command
   switch (COMMAND) {
-    case FORWARD_COARSE:
-      forward_coarse();
+    case FORWARD_COMMAND:
+      forward();
       break;
-    case FORWARD_FINE:
-      forward_fine();
+    case RIGHT_COMMAND:
+      right();
+      break;     
+    case LEFT_COMMAND:
+      left();
       break;
-    case RIGHT_COARSE:
-      right_coarse();
+    case BACKWARD_COMMAND:
+      backward();
       break;
-    case RIGHT_FINE:
-      right_fine();
-      break;      
-    case LEFT_COARSE:
-      left_coarse();
-      break;
-    case LEFT_FINE:
-      left_fine();
-      break;
-    case BACKWARD_COARSE:
-      backward_coarse();
-      break;
-    case BACKWARD_FINE:
-      backward_fine();
-      break;
-    case BOOM_RIGHT:
+    case BOOM_RIGHT_COMMAND:
       boom_right();
       break;
-    case BOOM_LEFT:
+    case BOOM_LEFT_COMMAND:
       boom_left();
       break;  
-    case BOOM_CENTER:
+    case BOOM_CENTER_COMMAND:
       boom_center();
-      break;   
+      break;  
+    case DROP_COMMAND:
+      drop();
+      break; 
     default:
       break;
   }
 }
 
 /* --- Tread Functions --- */
-void forward_coarse() {
+void forward() {
   left_tread.run(FORWARD);
   right_tread.run(FORWARD);
-  delay(COARSE_MOVE_DELAY);
+  delay(MOVE_DELAY);
   left_tread.run(RELEASE); // initialize motor off
   right_tread.run(RELEASE); // initialize motor off
 }
 
-void forward_fine() {
+void backward() {
+  left_tread.run(BACKWARD);
+  right_tread.run(BACKWARD);
+  delay(MOVE_DELAY);
+  left_tread.run(RELEASE); // initialize motor off
+  right_tread.run(RELEASE); // initialize motor off
+}
+
+void right() {
   left_tread.run(FORWARD);
+  right_tread.run(BACKWARD);
+  delay(TURN_DELAY);
+  left_tread.run(RELEASE); // initialize motor off
+  right_tread.run(RELEASE); // initialize motor off
+}
+
+void left() {
+  left_tread.run(BACKWARD);
   right_tread.run(FORWARD);
-  delay(FINE_MOVE_DELAY);
+  delay(TURN_DELAY);
   left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(RELEASE); // initialize motor off
-}
-
-void backward_coarse() {
-  left_tread.run(BACKWARD);
-  right_tread.run(BACKWARD);
-  delay(COARSE_MOVE_DELAY);
-  left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(RELEASE); // initialize motor off
-}
-
-void backward_fine() {
-  left_tread.run(BACKWARD);
-  right_tread.run(BACKWARD);
-  delay(FINE_MOVE_DELAY);
-  left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(RELEASE); // initialize motor off
-}
-
-void right_coarse() {
-  left_tread.run(FORWARD);
-  delay(COARSE_TURN_DELAY);
-  left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(BACKWARD);
-  delay(COARSE_TURN_DELAY);
-  right_tread.run(RELEASE); // initialize motor off
-}
-
-void right_fine() {
-  left_tread.run(FORWARD);
-  delay(FINE_TURN_DELAY);
-  left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(BACKWARD);
-  delay(FINE_TURN_DELAY);
-  right_tread.run(RELEASE); // initialize motor off
-}
-
-void left_coarse() {
-  left_tread.run(BACKWARD);
-  delay(COARSE_TURN_DELAY);
-  left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(FORWARD);
-  delay(COARSE_TURN_DELAY);
-  right_tread.run(RELEASE); // initialize motor off
-}
-
-void left_fine() {
-  left_tread.run(BACKWARD);
-  delay(FINE_TURN_DELAY);
-  left_tread.run(RELEASE); // initialize motor off
-  right_tread.run(FORWARD);
-  delay(FINE_TURN_DELAY);
   right_tread.run(RELEASE); // initialize motor off
 }
 
@@ -188,3 +136,6 @@ void boom_center() {
   delay(BOOM_DELAY);  
 }
 
+void drop() {
+  delay(DROP_DELAY);
+}
