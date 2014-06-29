@@ -523,18 +523,24 @@ class StateMachine(object):
     ## Update Map   
     def update_tree_map(self):
         print('\t\t[Updating Tree Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
-        tree_map = 255 * (self.left_tree_map + self.right_tree_map + self.spooler_tree_map)
-        return tree_map
+        try:
+            tree_map = 255 * (self.left_tree_map + self.right_tree_map + self.spooler_tree_map)
+            return tree_map
+        except Exception as error:
+            print('\tERROR: %s' % str(error)
     
     ## Update Map   
     def update_spooler_map(self):
         print('\t\tUpdating Spooler Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
-        spooler_map = 255 * (self.left_spooler_map + self.right_spooler_map)
-        return spooler_map
+        try:
+            spooler_map = 255 * (self.left_spooler_map + self.right_spooler_map)
+            return spooler_map
+        except Exception as error:
+            print('\tERROR: %s' % str(error)
     
     ## Update Map   
     def draw_left_tree_map(self, snapshot, position):
-        print('\t\t[Updating Right Tree Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        print('\t\t[Drawing Right Tree Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         self.left_tree_map = numpy.zeros([self.X_SIZE, self.Y_SIZE])
         (x, y, t) = position
         x_all = []
@@ -562,7 +568,7 @@ class StateMachine(object):
                     self.left_tree_map[x_vals, y_vals] = 1
     ## Update Map   
     def draw_spooler_tree_map(self, snapshot, position):
-        print('\t\t[Updating Spooler Tree Map]')
+        print('\t\t[Drawing Spooler Tree Map]')
         self.spooler_tree_map = numpy.zeros([self.X_SIZE, self.Y_SIZE])
         (x, y, t) = position
         x_all = []
@@ -590,8 +596,8 @@ class StateMachine(object):
                     self.spooler_tree_map[x_vals, y_vals] = 1
     ## Update Map   
     def draw_right_tree_map(self, snapshot, position):
-        print('\t\t[Updating Right Tree Map]')
-        self.right_map = numpy.zeros([self.X_SIZE, self.Y_SIZE])
+        print('\t\t[Drawing Right Tree Map]')
+        self.right_tree_map = numpy.zeros([self.X_SIZE, self.Y_SIZE])
         (x, y, t) = position
         x_all = []
         y_all = []
@@ -615,7 +621,7 @@ class StateMachine(object):
                              continue
                     x_vals = numpy.linspace(x1, x2, dist).astype(int)
                     y_vals = numpy.linspace(y1, y2, dist).astype(int)
-                    self.right_map[x_vals, y_vals] = 1
+                    self.right_tree_map[x_vals, y_vals] = 1
                     
     ## Predict Tree Locations        
     def predict_trees(self, tree_map):

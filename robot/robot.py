@@ -173,6 +173,7 @@ class Vision(object):
             snapshot = [((self.CAM_FOV / self.CAM_WIDTH) * (index - (self.CAM_WIDTH / 2.0))) for index in probable[0].tolist()]
             cv2.imwrite('mask_tree.jpg', mask)
             print('\tOKAY')
+            print('\tOffsets Detected: %s' % str(len(snapshot)))
             return snapshot
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -190,6 +191,7 @@ class Vision(object):
             snapshot = [((self.CAM_FOV / self.CAM_WIDTH) * (index - (self.CAM_WIDTH / 2.0))) for index in probable[0].tolist()]
             cv2.imwrite('mask_spooler.jpg', mask)
             print('\tOKAY')
+            print('\tOffsets Detected: %s' % str(len(snapshot)))
             return snapshot
         except Exception as error:
             print('\tERROR: %s' % str(error))
