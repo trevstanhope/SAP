@@ -56,7 +56,7 @@ class Robot:
                 spooler_snapshot = self.vision.find_spooler(hsv)
                 result = self.client.send_request(trees_snapshot, spooler_snapshot)
                 response = self.client.receive_response()
-                error = self.controller.execute(response)
+                output = self.controller.execute(response)
             except KeyboardInterrupt:
                 self.client.close()
                 self.vision.close()
@@ -158,7 +158,7 @@ class Vision(object):
             hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
             cv2.imwrite('bgr.jpg', bgr)
             cv2.imwrite('hsv.jpg', hsv)
-        return hsv
+            return hsv
         
     #!TODO Find Trees
     def find_trees(self, hsv):
@@ -207,6 +207,7 @@ class Vision(object):
 
 # Controller
 import serial
+import json
 class Controller(object):
     
     ## Initialize Serial Port
@@ -214,7 +215,7 @@ class Controller(object):
     
         print('[Initializing Controller]')
         try:
-            self.arduino = serial.Serial(object.ARDUINO_DEV, object.ARDUINO_BAUD)
+            self.arduino = serial.Serial(object.ARDUINO_DEV, object.ARDUINO_BAUD, timeout=None)
             print('\tOKAY')
         except Exception as error:
             print('\tERROR: %s' % str(error))
@@ -225,7 +226,9 @@ class Controller(object):
         try:
             command = response['command']
             self.arduino.write(command)
-            print('\tOKAY')
+            output = self.arduino.readline()
+            print('\tOKAY: %s' % output)
+            return output
         except Exception as error:
             print('\tERROR: %s' % str(error))
     

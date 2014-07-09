@@ -28,6 +28,7 @@ sudo cp configs/inittab /etc
 sudo cp configs/80-alamode.rules /etc/udev/rules.d
 sudo cp -r libs/* /usr/share/arduino/libraries
 sudo cp config/interfaces /etc/network/interfaces
+sudo cp /usr/share/arduino/libraries/Wire/utility/* /usr/share/arduino/libraries/Wire/
 
 # Must Restart for changes to take affect
 sudo reboot

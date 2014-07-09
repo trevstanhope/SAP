@@ -14,5 +14,5 @@ ARDUINO_DIR  = /usr/share/arduino
 TARGET       = spooler
 BOARD_TAG    = alamode # for dev use 'uno'
 ARDUINO_PORT = /dev/ttyS0 # for dev use '/dev/ttyACM0'
-ARDUINO_LIBS = AFMotor Servo
+ARDUINO_LIBS = AFMotor Servo Wire HMC6352 twi
 include /usr/share/arduino/Arduino.mk
