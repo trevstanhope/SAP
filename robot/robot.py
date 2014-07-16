@@ -143,8 +143,10 @@ class Vision(object):
             self.CAM_WIDTH = object.CAM_WIDTH
             self.CAM_FOV = object.CAM_FOV
             self.THRESHOLD_PERCENTILE = object.THRESHOLD_PERCENTILE
-            self.TREE_THRESHOLD_MIN = numpy.array([object.TREE_HUE_MIN, object.TREE_SAT_MIN, object.TREE_VAL_MIN], numpy.uint8)
-            self.TREE_THRESHOLD_MAX = numpy.array([object.TREE_HUE_MAX, object.TREE_SAT_MAX, object.TREE_VAL_MAX], numpy.uint8)
+            self.TREE_THRESHOLD1_MIN = numpy.array([object.TREE_HUE1_MIN, object.TREE_SAT_MIN, object.TREE_VAL_MIN], numpy.uint8)
+            self.TREE_THRESHOLD1_MAX = numpy.array([object.TREE_HUE1_MAX, object.TREE_SAT_MAX, object.TREE_VAL_MAX], numpy.uint8)
+            self.TREE_THRESHOLD2_MIN = numpy.array([object.TREE_HUE2_MIN, object.TREE_SAT_MIN, object.TREE_VAL_MIN], numpy.uint8)
+            self.TREE_THRESHOLD2_MAX = numpy.array([object.TREE_HUE2_MAX, object.TREE_SAT_MAX, object.TREE_VAL_MAX], numpy.uint8)
             self.SPOOLER_THRESHOLD_MIN = numpy.array([object.SPOOLER_HUE_MIN, object.SPOOLER_SAT_MIN, object.SPOOLER_VAL_MIN], numpy.uint8)
             self.SPOOLER_THRESHOLD_MAX = numpy.array([object.SPOOLER_HUE_MAX, object.SPOOLER_SAT_MAX, object.SPOOLER_VAL_MAX], numpy.uint8)
             print('\tOKAY')
@@ -164,15 +166,14 @@ class Vision(object):
     def find_trees(self, hsv):
         print('[Finding Trees]')
         try:
-            mask = cv2.inRange(hsv, self.TREE_THRESHOLD_MIN, self.TREE_THRESHOLD_MAX)
+            mask1 = cv2.inRange(hsv, self.TREE_THRESHOLD1_MIN, self.TREE_THRESHOLD1_MAX)
+            mask2 = cv2.inRange(hsv, self.TREE_THRESHOLD2_MIN, self.TREE_THRESHOLD2_MAX)
+            mask = mask1 + mask2
             column_sum = mask.sum(axis=0) # vertical summation
             threshold = numpy.percentile(column_sum, self.THRESHOLD_PERCENTILE)
             probable = numpy.nonzero(column_sum >= threshold) # returns 1 length tuble
-            for i in probable[0]:
-                mask[:,i] = 255
             snapshot = [((self.CAM_FOV / self.CAM_WIDTH) * (index - (self.CAM_WIDTH / 2.0))) for index in probable[0].tolist()]
             cv2.imwrite('mask_tree.jpg', mask)
-            print('\tOKAY')
             print('\tOffsets Detected: %s' % str(len(snapshot)))
             return snapshot
         except Exception as error:
@@ -190,7 +191,6 @@ class Vision(object):
                 mask[:,i] = 255
             snapshot = [((self.CAM_FOV / self.CAM_WIDTH) * (index - (self.CAM_WIDTH / 2.0))) for index in probable[0].tolist()]
             cv2.imwrite('mask_spooler.jpg', mask)
-            print('\tOKAY')
             print('\tOffsets Detected: %s' % str(len(snapshot)))
             return snapshot
         except Exception as error:

@@ -74,13 +74,11 @@ class Host:
             self.display.update_gui()
             trees = self.state_machine.detected_trees
             self.display.update_gui()
-            scout_left = self.state_machine.scout_left_position
-            scout_right = self.state_machine.scout_right_position
-            spooler = self.state_machine.spooler_position
+            robots = self.state_machine.predict_robots()
             self.display.update_gui()
             path = self.state_machine.path
             true_path = self.state_machine.true_path
-            self.display.show_board(trees, scout_left, scout_right, spooler, path, true_path, tree_map)
+            self.display.show_board(trees, robots, path, true_path, tree_map)
             self.display.update_gui()
             #self.database.store(request, response)
             #self.display.update_gui()
@@ -237,23 +235,23 @@ class Display(object):
             print('\tERROR: %s' % str(error))
     
     ## Show Board State
-    def show_board(self, tree_locations, scout_left, scout_right, spooler, path, true_path, heat_map):
+    def show_board(self, tree_locations, robot_locations, path, true_path, heat_map):
         print('[Displaying Board] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         try:
             board = cv2.imread('board.jpg')
             ### Draw Tree locations
             (w,h,d) = board.shape
             for (x,y) in tree_locations:
-                cv2.circle(board,(x * w / 96, y * h / 96),3,(0,0,255),5)
+                cv2.circle(board,(x * w / 96, y * h / 96),5,(0,0,255),5)
             ### Draw Spooler location
-            (x,y,t) = spooler
-            cv2.rectangle(board,(int(((x + 3) * w)/ 96.0), int(((y + 2) * h) / 96.0)), (int(((x - 3) * w)/ 96.0), int(((y -2 ) * h) / 96.0)), (31,176,41), thickness=10)
+            (x,y,t) = robot_locations['spooler']
+            cv2.circle(board,(x * w / 96, y * h / 96),10,(0,255,0),10)
             ### Draw Left Scout location
-            (x,y,t) = scout_left
-            cv2.circle(board,(int(x * w / 96.0), int(y * h / 96.0)),5,(255,0,0),15)
+            (x,y,t) = robot_locations['scout_left']
+            cv2.circle(board,(x * w / 96, y * h / 96),10,(255,0,0),10)
             ### Draw Right Scout location
-            (x,y,t) = scout_right
-            cv2.circle(board,(int(x * w / 96.0), int(y * h / 96.0)),5,(255,0,0),15)
+            (x,y,t) = robot_locations['scout_right']
+            cv2.circle(board,(x * w / 96, y * h / 96),10,(255,0,0),10)
             ### Draw Path
             for i in range(len(path) - 1):
                 (x1, y1) = path[i]
@@ -316,18 +314,18 @@ class StateMachine(object):
             ### Tree Positions
             self.blind_trees = [
                 (16, 32),
-                (48, 32),
                 (80, 32),
-                (80, 80),
-                (16, 80),
             ]
             self.single_overlap_trees = [
+                (16, 32),
                 (16, 48),
                 (16, 64),
+                (16, 80),
                 (32, 32),
                 (32, 48),
                 (32, 64),
                 (32, 80),
+                (48, 32),
                 (48, 48),
                 (48, 64),
                 (48, 80),
@@ -339,16 +337,99 @@ class StateMachine(object):
                 (80, 32),
                 (80, 48),
                 (80, 64),
+                (80, 80)
             ]
             self.double_overlap_trees = [
             ]
             self.detected_trees = [
+              #(48, 32),
+              #(32, 32),
+              #(16, 32),
+              #(16, 48),
+              #(16, 64),
+              #(16, 80),
+              #(32, 48),
+              #(64, 48),
+              #(64, 32),
+              #(80, 32),
+              #(80, 48),
+              #(80, 64),
             ]
+            ### Paths
             self.path = [
+              #(48, 32),
+              #(32, 32),
+              #(16, 32),
+              #(16, 48),
+              #(16, 64),
+              #(16, 80),
+              #(32, 48),
+              #(64, 48),
+              #(64, 32),
+              #(80, 32),
+              #(80, 48),
+              #(80, 64),
             ]
             self.true_path = [
-            ]           
-            self.neighbors = [(-1, -1), (1, 1), (-1, 1), (1, -1), (0, 1), (0, -1), (1, 0), (-1, 0)]
+              (8, 19),
+              (8, 40),
+              (24, 40),
+              (24, 88),
+              (88, 88),
+              (88, 24),
+              (40, 24),
+              (40, 88),
+            ]
+            self.actions = [
+                "D",
+                "P",
+                "F3",
+                "U",
+                "F20",
+                "L40", ## first row
+                "P",
+                "F13",
+                "P",
+                "F13",
+                "P",
+                "F13",
+                "P",
+                "F13",
+                "P",
+                "F10",
+                "P",
+                "R45", ## up to second row
+                "F16",
+                "S",
+                "R45",
+                "F16", ## second row
+                "S",
+                "F16",
+                "S",
+                "F16",
+                "S",
+                "F16",
+                "P",
+                "L45", # third row
+                "F16",
+                "P",
+                "F16",
+                "P",
+                "L45", #
+                "F16",
+                "P",
+                "F16",
+                "S",
+                "F16",
+                "S",
+                "R32"
+                "F16",
+                "P",
+                "F16",
+                "S",
+                "F16",
+                "S",
+            ]
             ### Spooler Position
             self.SPOOLER_DEFAULT_X = object.SPOOLER_DEFAULT_X
             self.SPOOLER_DEFAULT_Y = object.SPOOLER_DEFAULT_Y
@@ -403,99 +484,16 @@ class StateMachine(object):
     
     ##!TODO Handle Spooler
     def command_spooler(self, request):
-        print('\tSPOOLER')
-        try:
-            spooler_map = self.update_spooler_map()
-            self.predict_spooler(spooler_map)
-            tree_map = self.update_tree_map()
-            self.predict_trees(tree_map)
-            ## 1. If not enough trees have been detected...
-            if (len(self.detected_trees) < self.NUM_TREES) and (len(self.true_path) < self.NUM_TREES):
-                print('\t\tIf not enough trees have been detected...')
-                command = self.FORK_DOWN_COMMAND
-            ## 3. If a path has been found...
-            elif len(self.true_path) < self.NUM_TREES:
-                print('\t\tIf a path has been found...')
-                self.path = self.find_path(self.detected_trees)
-                self.true_path = self.find_true_path(self.path)
-                self.target_points = self.true_path[1:]
-                command = self.FORWARD_COMMAND + str(4) + self.FORK_UP_COMMAND
-            ## 4. If points have been established...
-            elif len(self.target_points) > 0:
-				### Position
-                (x, y, t) = self.spooler_position
-                (target_x, target_y) = self.target_points[0]
-                distance_to_target = numpy.linalg.norm(numpy.array((target_x,target_y)) - numpy.array((x,y)))
-                if numpy.less(distance_to_target, 2):
-                    print('\t\tWARNING: Reached Target, proceeding to Next Point!')
-                    self.target_points.pop(0) # removes last target
-                    distance_to_target = numpy.linalg.norm(numpy.array((target_x,target_y)) - numpy.array((x,y)))
-                    command = self.WAIT_COMMAND
-                else:
-					print('\t\tWARNING: Navigating to Target!')
-					if (distance_to_target > 16):
-						distance_change = distance_to_target
-					else:
-						distance_change = distance_to_target
-					print('\t\tCurrent Point: %s' % str((x,y)))    
-					print('\t\tTarget Point: %s' % str((target_x, target_y)))
-					print('\t\tDistance to Target: %s' % str(distance_to_target))
-					print('\t\tDistance Change: %s' % str(distance_change))
-					### Orientation
-					target_orientation = self.orientation((x,y), (target_x, target_y))
-					if numpy.less(t, target_orientation) and ((target_orientation - t) < numpy.pi):
-						if (t - target_orientation) > 2 * numpy.pi:
-							orientation_to_target = abs(t - target_orientation - 2 * numpy.pi) #!TODO
-						else:
-							orientation_to_target = abs(t - target_orientation) #!TODO
-					elif numpy.greater(t, target_orientation) or ((target_orientation - t) < 2 * numpy.pi):
-						if (t - target_orientation) < 0:
-							orientation_to_target = abs(2 * numpy.pi - t - target_orientation) #!TODO
-						else:
-							orientation_to_target = abs(t - target_orientation) #!TODO
-					orientation_change = orientation_to_target
-					print('\t\tCurrent Orientation: %s' % str(t * 180 / numpy.pi))
-					print('\t\tTarget Orientation: %s' % str(target_orientation * 180 / numpy.pi))
-					print('\t\tOrientation to Target: %s' % str(orientation_to_target * 180 / numpy.pi))
-					print('\t\tOrientation Change: %s' % str(orientation_change * 180 / numpy.pi))
-					### Move Forward
-					if numpy.allclose(t, target_orientation, atol=self.SPOOLER_TURN):
-						num_commands = int(math.ceil(distance_change / self.SPOOLER_MOVEMENT))
-						command = self.FORWARD_COMMAND + str(num_commands)
-						movement = num_commands * self.SPOOLER_MOVEMENT
-						new_x = x + movement * numpy.cos(t)
-						new_y = y + movement * numpy.sin(t)
-						self.spooler_position = (new_x, new_y, t)
-					### Turn Right
-					elif (numpy.less(t, target_orientation) and numpy.less(target_orientation - t, numpy.pi)) or (numpy.less(t, target_orientation + 2 * numpy.pi) and numpy.less(2 * numpy.pi + target_orientation - t, numpy.pi)): #!TODO
-						num_commands = int(math.ceil(orientation_change / self.SPOOLER_TURN))
-						command = self.BOOM_RIGHT_COMMAND + self.RIGHT_COMMAND + str(num_commands)
-						new_t = t + num_commands * self.SPOOLER_TURN
-						if new_t > 2 * numpy.pi:
-							new_t_round = numpy.around(new_t - 2 * numpy.pi, self.ORIENTATION_PRECISION)
-						else:
-							new_t_round = numpy.around(new_t, self.ORIENTATION_PRECISION)
-						self.spooler_position = (x, y, new_t_round)
-					### Turn Left
-					elif numpy.greater(t, target_orientation) or ((target_orientation - t) < 2 * numpy.pi): #!TODO
-						num_commands = int(math.ceil(orientation_change / self.SPOOLER_TURN))
-						command = self.BOOM_LEFT_COMMAND + self.LEFT_COMMAND + str(num_commands)
-						new_t = t - num_commands * self.SPOOLER_TURN
-						if new_t < 0:
-							new_t = numpy.around(2 * numpy.pi + new_t, self.ORIENTATION_PRECISION)
-						else:
-							new_t = numpy.around(new_t, self.ORIENTATION_PRECISION)
-						self.spooler_position = (x, y, new_t)
-					else:
-						command = self.WAIT_COMMAND
-            else:
+        print self.actions
+        if len(self.actions) > 0:        
+            try:
+                command = self.actions.pop(0)
+            except Exception as error:
+                print('\t\tERROR in command_spooler(): %s' % str(error))
                 command = self.WAIT_COMMAND
-        except Exception as error:
-            print('\t\tERROR in command_spooler(): %s' % str(error))
-            command = self.WAIT_COMMAND
         response = {
             'type' : 'response', 
-            'command' : command
+            'command' : str(command)
         }
         print('\t\t--> Command: %s' % str(command))
         return response
@@ -504,19 +502,20 @@ class StateMachine(object):
     def command_scout_left(self, request):
         print('\tLEFT SCOUT')
         try:
-            spooler_map = self.update_spooler_map()
-            self.predict_spooler(spooler_map)
-            tree_map = self.update_tree_map()
-            self.predict_trees(tree_map)
             trees_snapshot = request['trees_snapshot']
             spooler_snapshot = request['spooler_snapshot']
-            self.draw_left_spooler_map(spooler_snapshot)
-            self.draw_left_tree_map(trees_snapshot)
+            position = self.scout_left_position
             ### 1. If not aligned ...
             if not self.left_aligned:
 				command = self.ALIGN_CENTER_COMMAND
 				self.left_aligned = True
+            ### 2. If not enough trees detected ...
+            elif len(self.true_path) < self.NUM_TREES:
+                self.draw_left_tree_map(trees_snapshot)
+                command = self.WAIT_COMMAND
+            ### 3. If enough trees detected ...
             else:
+                #self.draw_left_spooler_map(spooler_snapshot)
                 command = self.WAIT_COMMAND
         except Exception as error:
             print('\t\tERROR in command_scout_left(): %s' % str(error))
@@ -532,20 +531,20 @@ class StateMachine(object):
     def command_scout_right(self, request):
         print('\tRIGHT SCOUT')
         try:
-            spooler_map = self.update_spooler_map()
-            self.predict_spooler(spooler_map)
-            tree_map = self.update_tree_map()
-            self.predict_trees(tree_map)
             tree_snapshot = request['trees_snapshot']
             spooler_snapshot = request['spooler_snapshot']
-            self.draw_right_spooler_map(spooler_snapshot)
-            self.draw_right_tree_map(tree_snapshot)
+            position = self.scout_right_position
             ### 1. If not aligned ...
             if not self.right_aligned:
 				command = self.ALIGN_CENTER_COMMAND
 				self.right_aligned = True
             ### 2. If not enough trees detected ...
+            elif len(self.true_path) < self.NUM_TREES:
+                self.draw_right_tree_map(tree_snapshot)
+                command = self.WAIT_COMMAND
+            ### 3. If enough trees detected ...
             else:
+                #self.draw_right_spooler_map(spooler_snapshot)
                 command = self.WAIT_COMMAND
         except Exception as error:
             print('\t\tERROR in command_scout_right(): %s' % str(error))
@@ -574,7 +573,7 @@ class StateMachine(object):
         x_all = []
         y_all = []
         for offset in snapshot:
-            for error in numpy.linspace(-0.01, 0.01, 10):
+            for error in numpy.linspace(-0.03, 0.03, 10):
                 x1 = x + numpy.cos(t + offset + error) * self.DIST_MIN
                 y1 = y + numpy.sin(t + offset + error) * self.DIST_MIN
                 if (x1 >= self.X_SIZE - 2) or (y1 >= self.Y_SIZE - 2):
@@ -595,6 +594,34 @@ class StateMachine(object):
                     y_vals = numpy.linspace(y1, y2, dist).astype(int)
                     self.left_tree_map[x_vals, y_vals] = 1
                     
+    ## Draw Center Tree Map   
+    def draw_center_tree_map(self, snapshot):
+        print('\t\t[Drawing Spooler Tree Map]')
+        self.center_tree_map = numpy.zeros([self.X_SIZE, self.Y_SIZE])
+        (x, y, t) = self.spooler_position
+        x_all = []
+        y_all = []
+        for offset in snapshot:
+            for error in numpy.linspace(-0.02, 0.02, 4):
+                x1 = x + numpy.cos(t + offset + error) * self.DIST_MIN
+                y1 = y + numpy.sin(t + offset + error) * self.DIST_MIN
+                if (x1 >= self.X_SIZE - 2) or (y1 >= self.Y_SIZE - 2):
+                    pass
+                elif (x1 <= 2) or (y1 <= 2):
+                    pass
+                else:
+                    for dist in range(self.DIST_MIN, self.DIST_MAX):
+                        x2 = x1 + numpy.cos(t + offset + error) * dist
+                        y2 = y1 + numpy.sin(t + offset + error) * dist
+                        if (x2 >= self.X_SIZE - 2) or (y2 >= self.Y_SIZE - 2):
+                            break
+                        elif (x2 <= 2) or (y2 <= 2):
+                            break
+                        else:
+                             continue
+                    x_vals = numpy.linspace(x1, x2, dist).astype(int)
+                    y_vals = numpy.linspace(y1, y2, dist).astype(int)
+                    self.center_tree_map[x_vals, y_vals] = 1
     ## Update Map   
     def draw_right_tree_map(self, snapshot):
         print('\t\t[Drawing Right Tree Map]')
@@ -603,7 +630,7 @@ class StateMachine(object):
         x_all = []
         y_all = []
         for offset in snapshot:
-            for error in numpy.linspace(-0.01, 0.01, 10):
+            for error in numpy.linspace(-0.02, 0.02, 4):
                 x1 = x + numpy.cos(t + offset + error) * self.DIST_MIN
                 y1 = y + numpy.sin(t + offset + error) * self.DIST_MIN
                 if (x1 >= self.X_SIZE - 2) or (y1 >= self.Y_SIZE - 2):
@@ -623,16 +650,14 @@ class StateMachine(object):
                     x_vals = numpy.linspace(x1, x2, dist).astype(int)
                     y_vals = numpy.linspace(y1, y2, dist).astype(int)
                     self.right_tree_map[x_vals, y_vals] = 1
-                    
     ## Update Map   
     def update_spooler_map(self):
-        print('\t\t[Updating Spooler Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        print('\t\tUpdating Spooler Map] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         try:
             spooler_map = 255 * (self.left_spooler_map + self.right_spooler_map)
-            print('\t\t\tOKAY')
             return spooler_map
         except Exception as error:
-            print('\t\t\tERROR: %s' % str(error))
+            print('\tERROR: %s' % str(error))
             
     ## Draw Left Spooler Map   
     def draw_left_spooler_map(self, snapshot):
@@ -642,7 +667,7 @@ class StateMachine(object):
         x_all = []
         y_all = []
         for offset in snapshot:
-            for error in numpy.linspace(-0.01, 0.01, 10):
+            for error in numpy.linspace(-0.02, 0.02, 4):
                 x1 = x + numpy.cos(t + offset + error) * self.DIST_MIN
                 y1 = y + numpy.sin(t + offset + error) * self.DIST_MIN
                 if (x1 >= self.X_SIZE - 2) or (y1 >= self.Y_SIZE - 2):
@@ -671,7 +696,7 @@ class StateMachine(object):
         x_all = []
         y_all = []
         for offset in snapshot:
-            for error in numpy.linspace(-0.01, 0.01, 10):
+            for error in numpy.linspace(-0.02, 0.02, 4):
                 x1 = x + numpy.cos(t + offset + error) * self.DIST_MIN
                 y1 = y + numpy.sin(t + offset + error) * self.DIST_MIN
                 if (x1 >= self.X_SIZE - 2) or (y1 >= self.Y_SIZE - 2):
@@ -696,15 +721,17 @@ class StateMachine(object):
     def predict_trees(self, tree_map):
         print('\t[Predicting Tree Locations] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
         tree_locations = []
-        for (a,b) in self.single_overlap_trees:
-            print a, b, tree_map[a,b]
-            for i,j in self.neighbors:
-                if tree_map[a+i,b+j] >= 255 * 2: # might throw dim error
+        if len(tree_locations) < self.NUM_TREES:
+            for (a,b) in self.double_overlap_trees:
+                if tree_map[a,b] >= 255 * 3: # might throw dim error
                     tree_locations.append( (a, b) )
-        for (a,b) in self.blind_trees:
-            print a, b, tree_map[a,b]
-            for i,j in self.neighbors:
-                if tree_map[a+i,b+j] >= 255 * 1:
+        if len(tree_locations) < self.NUM_TREES:
+            for (a,b) in self.single_overlap_trees:
+                if tree_map[a,b] >= 255 * 2: # might throw dim error
+                    tree_locations.append( (a, b) )
+        if len(tree_locations) < self.NUM_TREES:
+            for (a,b) in self.blind_trees:
+                if tree_map[a,b] >= 255 * 1: # might throw dim error
                     tree_locations.append( (a, b) )
         detected_trees = list(set(tree_locations))
         self.detected_trees = detected_trees
@@ -712,24 +739,17 @@ class StateMachine(object):
         return detected_trees
     
     ## Predict Robot Locations
-    def predict_spooler(self, spooler_map):
-        print('\t\t[Predicting Spooler Location] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
-        try:
-            (old_x, old_y, old_t) = self.spooler_position
-            if (old_y < 32) or (old_x < 16) or (old_x > 80):
-                return (old_x, old_y, old_t)
-            else:
-                probable = numpy.nonzero([spooler_map >= 255 * 2])
-                x_vals = probable[1]
-                y_vals = probable[2]
-                new_x = x_vals.mean()
-                new_y = y_vals.mean()
-                (old_x, old_y, old_t) = self.spooler_position
-                self.spooler_position = (new_x, new_y, old_t)
-                print self.spooler_position
-                return (new_x, new_y, old_t)
-        except Exception as error:
-            print('\t\t\tERROR: %s' % str(error))
+    def predict_robots(self):
+        print('\t\t[Predicting Robot Locations] %s' % datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"))
+        (scout_left_x, scout_left_y, scout_left_t) = self.scout_left_position
+        (scout_right_x, scout_right_y, scout_right_t) = self.scout_right_position
+        (spooler_x, spooler_y, spooler_t) = self.spooler_position
+        robot_positions = {
+            'scout_left' : (int(scout_left_x), int(scout_left_y), int(scout_left_t)),
+            'scout_right' : (int(scout_right_x), int(scout_right_y), int(scout_right_t)),
+            'spooler' : (int(spooler_x), int(spooler_y), int(spooler_t))
+        }
+        return robot_positions
     
     ## Calculate Minimum Hamiltonian Path
     def find_path(self, trees):
